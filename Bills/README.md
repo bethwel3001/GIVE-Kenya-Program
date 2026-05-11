@@ -22,6 +22,12 @@ I've just added more flexibility to how I manage my data.
 - **"Go Back" Logic**: I implemented a 'back' command across all prompts. This means I can change my mind at any time during an action without being forced to complete it.
 - **Robust Validation**: Refined the input loops to ensure that the app doesn't crash if I enter something unexpected.
 
+## Stage 4: Optimized Management (Learning on the Job)
+Following some great tips, I've refactored the underlying data structure for better efficiency.
+- **HashMap Refactor**: Switched from `Vec` to `HashMap<String, Bill>`. This makes looking up, editing, and removing bills much more direct using the bill's name as a unique key.
+- **Clean Architecture**: Ensured each menu choice is handled by its own dedicated function, keeping the `main` loop clean and focused.
+- **Index-Free Deletion**: No more worrying about shifting indices when removing items. I can now remove and edit bills directly by their names.
+
 ## How to Run
 1. Make sure you have [Rust](https://www.rust-lang.org/) installed.
 2. Navigate to the `Bills` directory.

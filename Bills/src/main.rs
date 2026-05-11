@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io;
 
 // Data structure to represent a bill
@@ -9,7 +10,6 @@ struct Bill {
 // Helper to capture trimmed user input from stdin
 fn get_input() -> Option<String> {
     let mut buffer = String::new();
-    // Read input from the terminal
     if io::stdin().read_line(&mut buffer).is_ok() {
         let input = buffer.trim().to_string();
         if input.is_empty() {
@@ -30,7 +30,6 @@ fn get_bill_amount() -> Option<f64> {
         if input.to_lowercase() == "back" {
             return None;
         }
-        // Parse input to f64
         match input.parse::<f64>() {
             Ok(amount) => return Some(amount),
             Err(_) => println!("Please enter a valid number for the amount (or 'back'):"),
@@ -38,7 +37,7 @@ fn get_bill_amount() -> Option<f64> {
     }
 }
 
-fn add_bill(bills: &mut Vec<Bill>) {
+fn add_bill(bills: &mut HashMap<String, Bill>) {
     println!("Enter bill name (or type 'back' to cancel):");
     let name = match get_input() {
         Some(input) => {
@@ -55,35 +54,37 @@ fn add_bill(bills: &mut Vec<Bill>) {
         None => return,
     };
 
-    // Add the new bill to the collection
-    let bill = Bill { name, amount };
-    bills.push(bill);
+    let bill = Bill {
+        name: name.clone(),
+        amount,
+    };
+    bills.insert(name, bill);
     println!("Bill added successfully!");
 }
 
-fn view_bills(bills: &Vec<Bill>) {
+fn view_bills(bills: &HashMap<String, Bill>) {
     if bills.is_empty() {
         println!("No bills found.");
         return;
     }
 
     println!("--- Current Bills ---");
-    for (index, bill) in bills.iter().enumerate() {
-        println!("{}. Name: {}, Amount: ${:.2}", index + 1, bill.name, bill.amount);
+    for bill in bills.values() {
+        println!("Name: {}, Amount: ${:.2}", bill.name, bill.amount);
     }
     println!("---------------------");
 }
 
-fn remove_bill(bills: &mut Vec<Bill>) {
+fn remove_bill(bills: &mut HashMap<String, Bill>) {
     if bills.is_empty() {
         println!("No bills to remove.");
         return;
     }
 
     view_bills(bills);
-    println!("Enter the number of the bill to remove (or type 'back' to cancel):");
+    println!("Enter the name of the bill to remove (or type 'back' to cancel):");
 
-    let input = match get_input() {
+    let name = match get_input() {
         Some(input) => {
             if input.to_lowercase() == "back" {
                 return;
@@ -93,25 +94,23 @@ fn remove_bill(bills: &mut Vec<Bill>) {
         None => return,
     };
 
-    match input.parse::<usize>() {
-        Ok(number) if number > 0 && number <= bills.len() => {
-            bills.remove(number - 1);
-            println!("Bill removed successfully!");
-        }
-        _ => println!("Invalid bill number."),
+    if bills.remove(&name).is_some() {
+        println!("Bill removed successfully!");
+    } else {
+        println!("Bill not found.");
     }
 }
 
-fn edit_bill(bills: &mut Vec<Bill>) {
+fn edit_bill(bills: &mut HashMap<String, Bill>) {
     if bills.is_empty() {
         println!("No bills to edit.");
         return;
     }
 
     view_bills(bills);
-    println!("Enter the number of the bill to edit (or type 'back' to cancel):");
+    println!("Enter the name of the bill to edit (or type 'back' to cancel):");
 
-    let input = match get_input() {
+    let old_name = match get_input() {
         Some(input) => {
             if input.to_lowercase() == "back" {
                 return;
@@ -121,26 +120,25 @@ fn edit_bill(bills: &mut Vec<Bill>) {
         None => return,
     };
 
-    let index = match input.parse::<usize>() {
-        Ok(number) if number > 0 && number <= bills.len() => number - 1,
-        _ => {
-            println!("Invalid bill number.");
-            return;
-        }
-    };
+    if !bills.contains_key(&old_name) {
+        println!("Bill not found.");
+        return;
+    }
 
-    println!("Editing bill: {}", bills[index].name);
-    println!("Enter new name (leave empty to keep current):");
-    if let Some(new_name) = get_input() {
-        if new_name.to_lowercase() == "back" {
+    println!("Editing bill: {}", old_name);
+    println!("Enter new name (leave empty to keep current, or 'back'):");
+    let mut new_name = old_name.clone();
+    if let Some(input) = get_input() {
+        if input.to_lowercase() == "back" {
             return;
         }
-        if !new_name.is_empty() {
-            bills[index].name = new_name;
+        if !input.is_empty() {
+            new_name = input;
         }
     }
 
-    println!("Enter new amount (leave empty to keep current, or 'back' to cancel):");
+    println!("Enter new amount (leave empty to keep current, or 'back'):");
+    let mut new_amount = bills.get(&old_name).unwrap().amount;
     loop {
         if let Some(input) = get_input() {
             if input.to_lowercase() == "back" {
@@ -151,7 +149,7 @@ fn edit_bill(bills: &mut Vec<Bill>) {
             }
             match input.parse::<f64>() {
                 Ok(amount) => {
-                    bills[index].amount = amount;
+                    new_amount = amount;
                     break;
                 }
                 Err(_) => println!("Please enter a valid number (or leave empty):"),
@@ -161,12 +159,23 @@ fn edit_bill(bills: &mut Vec<Bill>) {
         }
     }
 
+    // If the name changed, remove the old entry and insert the new one
+    if new_name != old_name {
+        bills.remove(&old_name);
+    }
+    bills.insert(
+        new_name.clone(),
+        Bill {
+            name: new_name,
+            amount: new_amount,
+        },
+    );
+
     println!("Bill updated successfully!");
 }
 
 fn main() {
-    // In-memory storage for bills
-    let mut bills: Vec<Bill> = Vec::new();
+    let mut bills: HashMap<String, Bill> = HashMap::new();
 
     loop {
         println!("\n--- Bill Manager Menu ---");
