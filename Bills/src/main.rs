@@ -24,21 +24,29 @@ fn get_input() -> Option<String> {
 
 // Prompt and parse bill amount from user
 fn get_bill_amount() -> Option<f64> {
-    println!("Enter bill amount:");
+    println!("Enter bill amount (or type 'back' to cancel):");
     loop {
         let input = get_input()?;
+        if input.to_lowercase() == "back" {
+            return None;
+        }
         // Parse input to f64
         match input.parse::<f64>() {
             Ok(amount) => return Some(amount),
-            Err(_) => println!("Please enter a valid number for the amount:"),
+            Err(_) => println!("Please enter a valid number for the amount (or 'back'):"),
         }
     }
 }
 
 fn add_bill(bills: &mut Vec<Bill>) {
-    println!("Enter bill name:");
+    println!("Enter bill name (or type 'back' to cancel):");
     let name = match get_input() {
-        Some(input) => input,
+        Some(input) => {
+            if input.to_lowercase() == "back" {
+                return;
+            }
+            input
+        }
         None => return,
     };
 
@@ -73,10 +81,15 @@ fn remove_bill(bills: &mut Vec<Bill>) {
     }
 
     view_bills(bills);
-    println!("Enter the number of the bill to remove:");
+    println!("Enter the number of the bill to remove (or type 'back' to cancel):");
 
     let input = match get_input() {
-        Some(input) => input,
+        Some(input) => {
+            if input.to_lowercase() == "back" {
+                return;
+            }
+            input
+        }
         None => return,
     };
 
@@ -89,6 +102,68 @@ fn remove_bill(bills: &mut Vec<Bill>) {
     }
 }
 
+fn edit_bill(bills: &mut Vec<Bill>) {
+    if bills.is_empty() {
+        println!("No bills to edit.");
+        return;
+    }
+
+    view_bills(bills);
+    println!("Enter the number of the bill to edit (or type 'back' to cancel):");
+
+    let input = match get_input() {
+        Some(input) => {
+            if input.to_lowercase() == "back" {
+                return;
+            }
+            input
+        }
+        None => return,
+    };
+
+    let index = match input.parse::<usize>() {
+        Ok(number) if number > 0 && number <= bills.len() => number - 1,
+        _ => {
+            println!("Invalid bill number.");
+            return;
+        }
+    };
+
+    println!("Editing bill: {}", bills[index].name);
+    println!("Enter new name (leave empty to keep current):");
+    if let Some(new_name) = get_input() {
+        if new_name.to_lowercase() == "back" {
+            return;
+        }
+        if !new_name.is_empty() {
+            bills[index].name = new_name;
+        }
+    }
+
+    println!("Enter new amount (leave empty to keep current, or 'back' to cancel):");
+    loop {
+        if let Some(input) = get_input() {
+            if input.to_lowercase() == "back" {
+                return;
+            }
+            if input.is_empty() {
+                break;
+            }
+            match input.parse::<f64>() {
+                Ok(amount) => {
+                    bills[index].amount = amount;
+                    break;
+                }
+                Err(_) => println!("Please enter a valid number (or leave empty):"),
+            }
+        } else {
+            break;
+        }
+    }
+
+    println!("Bill updated successfully!");
+}
+
 fn main() {
     // In-memory storage for bills
     let mut bills: Vec<Bill> = Vec::new();
@@ -98,15 +173,17 @@ fn main() {
         println!("1. Add Bill");
         println!("2. View Bills");
         println!("3. Remove Bill");
-        println!("4. Exit");
-        println!("Enter choice (1-4):");
+        println!("4. Edit Bill");
+        println!("5. Exit");
+        println!("Enter choice (1-5):");
 
         let choice = get_input();
         match choice.as_deref() {
             Some("1") => add_bill(&mut bills),
             Some("2") => view_bills(&bills),
             Some("3") => remove_bill(&mut bills),
-            Some("4") => {
+            Some("4") => edit_bill(&mut bills),
+            Some("5") => {
                 println!("Goodbye!");
                 break;
             }
