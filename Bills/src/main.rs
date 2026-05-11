@@ -60,10 +60,33 @@ fn view_bills(bills: &Vec<Bill>) {
     }
 
     println!("--- Current Bills ---");
-    for bill in bills {
-        println!("Name: {}, Amount: ${:.2}", bill.name, bill.amount);
+    for (index, bill) in bills.iter().enumerate() {
+        println!("{}. Name: {}, Amount: ${:.2}", index + 1, bill.name, bill.amount);
     }
     println!("---------------------");
+}
+
+fn remove_bill(bills: &mut Vec<Bill>) {
+    if bills.is_empty() {
+        println!("No bills to remove.");
+        return;
+    }
+
+    view_bills(bills);
+    println!("Enter the number of the bill to remove:");
+
+    let input = match get_input() {
+        Some(input) => input,
+        None => return,
+    };
+
+    match input.parse::<usize>() {
+        Ok(number) if number > 0 && number <= bills.len() => {
+            bills.remove(number - 1);
+            println!("Bill removed successfully!");
+        }
+        _ => println!("Invalid bill number."),
+    }
 }
 
 fn main() {
@@ -74,14 +97,16 @@ fn main() {
         println!("\n--- Bill Manager Menu ---");
         println!("1. Add Bill");
         println!("2. View Bills");
-        println!("3. Exit");
-        println!("Enter choice (1-3):");
+        println!("3. Remove Bill");
+        println!("4. Exit");
+        println!("Enter choice (1-4):");
 
         let choice = get_input();
         match choice.as_deref() {
             Some("1") => add_bill(&mut bills),
             Some("2") => view_bills(&bills),
-            Some("3") => {
+            Some("3") => remove_bill(&mut bills),
+            Some("4") => {
                 println!("Goodbye!");
                 break;
             }
